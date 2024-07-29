@@ -47,10 +47,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import androidx.room.Room
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import com.google.firebase.crashlytics.buildtools.reloc.org.apache.commons.io.IOUtils
 import merail.calls.handler.ui.theme.IncomingCallHandlerTheme
 import merail.calls.handler.ui.theme.Typography
 import merail.calls.handler.workers.UpdateDatabaseWorker
@@ -61,7 +59,6 @@ import merail.tools.permissions.runtime.RuntimePermissionRequester
 import merail.tools.permissions.runtime.RuntimePermissionState
 import merail.tools.permissions.special.SpecialPermissionRequester
 import merail.tools.permissions.special.SpecialPermissionState
-import org.json.JSONObject
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 

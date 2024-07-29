@@ -1,7 +1,6 @@
 package merail.calls.handler
 
 import android.content.Context
-import com.google.firebase.crashlytics.buildtools.reloc.org.apache.commons.io.IOUtils
 import java.util.Calendar
 
 class OperationLogger {
@@ -12,11 +11,11 @@ class OperationLogger {
     fun getLog(context: Context): String {
         var log = "";
 
-        try {
-            context.openFileInput(logFileName).use {
-                log = IOUtils.toString(it, "UTF-8");
-            }
-        } catch (e: Exception) {}
+//        try {
+//            context.openFileInput(logFileName).use {
+//                log = IOUtils.toString(it, "UTF-8");
+//            }
+//        } catch (e: Exception) {}
 
         return log;
     }

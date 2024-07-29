@@ -7,10 +7,6 @@ import android.telecom.Call
 import android.telecom.CallScreeningService
 import android.telephony.TelephonyManager
 import androidx.annotation.RequiresApi
-import androidx.room.Room
-import com.google.firebase.crashlytics.buildtools.reloc.org.apache.commons.io.IOUtils
-import org.json.JSONArray
-import org.json.JSONObject
 
 @RequiresApi(Build.VERSION_CODES.N)
 class IncomingCallService : CallScreeningService() {

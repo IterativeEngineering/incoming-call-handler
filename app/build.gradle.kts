@@ -42,7 +42,6 @@ dependencies {
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("com.github.merail:request-permissions-tool:1.1.0")
-    implementation("com.google.firebase:firebase-crashlytics-buildtools:3.0.2")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
    
     val room_version = "2.6.1"
