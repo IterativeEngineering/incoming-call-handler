@@ -33,7 +33,7 @@ class IncomingCallService : CallScreeningService() {
     override fun onScreenCall(callDetails: Call.Details) {
         if (callDetails.callDirection == Call.Details.DIRECTION_INCOMING) {
             var phoneNumber = callDetails.handle.schemeSpecificPart
-            logger.saveToLog(applicationContext, "Incoming call from " + phoneNumber);
+            logger.saveToLog(applicationContext, "Incoming call from $phoneNumber");
 
             if (!phoneNumber.startsWith("+")) {
 //                Add missing country prefix
@@ -107,7 +107,7 @@ class IncomingCallService : CallScreeningService() {
                 }
             }
             if (blockTheCall || silenceTheCall) {
-                var logMessage = "Handling incoming call from " + phoneNumber + ":  ";
+                var logMessage = "Handling incoming call from $phoneNumber:  ";
                 if (blockTheCall) {
                     logMessage += "block "
                 }
@@ -131,13 +131,17 @@ class IncomingCallService : CallScreeningService() {
                 respondToCall(callDetails, response)
             } else {
                 //                        Handle in default dialer
-                logger.saveToLog(applicationContext, "Handling incoming call from " + phoneNumber + " in the default dialer");
+                logger.saveToLog(applicationContext,
+                    "Handling incoming call from $phoneNumber in the default dialer"
+                );
                 respondToCall(callDetails, CallResponse.Builder().build())
             }
             System.out.println("Handled call from " + phoneNumber + " in " + (System.currentTimeMillis() - perfStart));
         } else {
             //                        Handle in default dialer
-            logger.saveToLog(applicationContext, "Handling incoming call from " + phoneNumber + " in the default dialer");
+            logger.saveToLog(applicationContext,
+                "Handling incoming call from $phoneNumber in the default dialer"
+            );
             respondToCall(callDetails, CallResponse.Builder().build())
         }
     }

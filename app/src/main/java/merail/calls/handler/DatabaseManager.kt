@@ -1,93 +1,78 @@
 package merail.calls.handler
 
-import android.R.attr.text
-import android.R.id
 import android.content.Context
 import android.util.JsonReader
-import android.util.JsonToken
-import org.json.JSONObject
+import androidx.compose.runtime.MutableState
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
+import java.util.HashMap
 
 
 class DatabaseManager {
     companion object {
         private val logger = OperationLogger();
+        private val preferenceHelper = PreferenceHelper();
     }
 
-    fun parseStream(inputStream: InputStream, context: Context) {
-        // Parses a JSON stream, converts it to our structure and saves into a file
-        // our structure looks as follows:
-        // [ { "phone": "123", "name": "xyz" }, { "phone": "456", "name": "abc" }, ... ]
-
+    fun parseStream(inputStream: InputStream, context: Context, addedNumbersCount: MutableState<Int>?) {
+        // Parses a JSON stream and saves into a file.
+        // The structure remains the same, e.g.: [ { "phone": "123", "name": "xyz" }, { "phone": "456", "name": "abc" }, ... ]
+        // but the name is joined for multiple numbers in case there are duplicates.
         BufferedReader(InputStreamReader(inputStream)).use { reader ->
-            val numbersArray: MutableList<JSONObject> = ArrayList();
-            System.out.println("numbersArray size " + numbersArray.size);
+            val numbersMap = HashMap<String, String>(150000);
 
             val jsonReader = JsonReader(reader);
             jsonReader.beginArray();
 
-            val perfStart = System.currentTimeMillis()
-
             while (jsonReader.hasNext()) {
                 jsonReader.beginObject();
 
-                val blockedEntity = JSONObject();
-                var blockedEntityAgentName = "";
-                var blockedEntityAgencyName = "";
+                var phone = "";
+                var name = "";
 
                 while (jsonReader.hasNext()) {
-                    val key = jsonReader.nextName()
+                    val key = jsonReader.nextName();
                     val nextString = jsonReader.nextString();
-                    System.out.println("key" + key + "nextString" + nextString);
-                    if (key === "phone") {
-                        blockedEntity.put("phone", nextString);
-                    } else if (key === "agent_name") {
-                        blockedEntityAgentName = nextString
-                    } else if (key === "agency_name") {
-                        blockedEntityAgencyName = nextString
-                    } else {
-                        jsonReader.skipValue()
+
+                    if (key == "phone") {
+                        phone = nextString;
+                    } else if (key == "name") {
+                        name = nextString;
                     }
                 }
-
-                if (blockedEntityAgencyName.length > 0) {
-                    blockedEntityAgentName += " (" + blockedEntityAgencyName + ")";
-                }
-                blockedEntity.put("name", blockedEntityAgentName);
-                numbersArray.add(blockedEntity);
-                if (numbersArray.size === 1) {
-                    System.out.println(numbersArray);
-                }
-
                 jsonReader.endObject();
+
+                val existingBlockedEntityName = numbersMap[phone]
+                if (existingBlockedEntityName !== null) {
+                    numbersMap[phone] = "$existingBlockedEntityName | $name";
+                } else {
+                    numbersMap[phone] = name;
+                }
             }
 
             jsonReader.endArray();
 
-            System.out.println("finished in " + (System.currentTimeMillis() - perfStart))
+            context.openFileOutput(
+                context.getString(R.string.numbers_list_file),
+                Context.MODE_PRIVATE
+            ).use {
+                it.write(numbersMap.toString().toByteArray());
 
-            System.out.println("numbersArray size " + numbersArray.size);
+                preferenceHelper.setPreference(
+                    context,
+                    "saved_db_timestamp_pref",
+                    System.currentTimeMillis().toString()
+                );
 
+                val numbersMapSize = numbersMap.size
+                addedNumbersCount?.value = numbersMapSize
 
-//                    var line: String? = reader.readLine()
-//                    while (line != null) {
-//                        stringBuilder.append(line)
-//                        line = reader.readLine()
-//                    }
-
-            context.openFileOutput(context.getString(R.string.numbers_list_file), Context.MODE_PRIVATE).use {
-//                it.write(stringBuilder.toString().toByteArray());
-//                text =
-//                    text + " finished in " + (System.currentTimeMillis() - performanceMarkStart) + "ms, got " + numbersArrayLen + " numbers"
-//                System.out.println(" finished in " + (System.currentTimeMillis() - performanceMarkStart) + "ms, got " + numbersArrayLen + " numbers");
+                logger.saveToLog(
+                    context,
+                    "Loaded $numbersMapSize numbers"
+                );
             }
-
-//            logger.saveToLog(
-//                context,
-//                "Loaded " + numbersArrayLen + " numbers from " + uri
-//            );
         }
 
     }

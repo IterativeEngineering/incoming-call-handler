@@ -72,7 +72,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var roleRequester: RoleRequester
     private val logger = OperationLogger();
     private val preferenceHelper = PreferenceHelper();
-    private val databaseUpdater = UpdateDatabase();
+    private val databaseUpdater = UpdateDatabaseFromUrl();
     private val databaseManager = DatabaseManager()
 
     private val specialPermission = Manifest.permission.SYSTEM_ALERT_WINDOW
@@ -171,9 +171,6 @@ class MainActivity : ComponentActivity() {
                         )
                         .padding(8.dp)
                 )
-//                val shared = Preferences("blocked-numbers", MODE_PRIVATE);
-//                System.out.println("here" + shared.toString());
-
                 logContents = remember {
                     mutableStateOf("")
                 }
@@ -408,7 +405,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun toggleLog() {
-        if (logContents.value.length > 0) {
+        if (logContents.value.isNotEmpty()) {
             logContents.value = "";
         } else {
             logContents.value = logger.getLog(applicationContext)
@@ -418,26 +415,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == 100 && resultCode === RESULT_OK && data != null) {
-            val performanceMarkStart = System.currentTimeMillis()
-            val uri: Uri = data.getData()!!;
+            val uri: Uri = data.data!!;
 
-            val stringBuilder = StringBuilder()
             contentResolver.openInputStream(uri)?.use { inputStream ->
-                databaseManager.parseStream(inputStream, applicationContext)
+                databaseManager.parseStream(inputStream, applicationContext, addedNumbersCount)
             }
-
-//            val jsonObj = JSONObject(stringBuilder.toString());
-//            val numbersArray = jsonObj.getJSONArray("numbers")
-//            val numbersArrayLen = numbersArray.length()
-//            System.out.println("len is $numbersArrayLen")
-//
-//            addedNumbersCount.value = numbersArrayLen;
-//
-//            preferenceHelper.setPreference(
-//                applicationContext,
-//                "saved_db_timestamp_pref",
-//                System.currentTimeMillis().toString()
-//            )
         }
         super.onActivityResult(requestCode, resultCode, data)
     }
@@ -499,13 +481,13 @@ class MainActivity : ComponentActivity() {
                                         TextButton(
                                             onClick = {
                                                 if (updateAutomatically.value) {
-                                                    //                                                    Schedule auto update job
+                                                    // Schedule auto update job
                                                     preferenceHelper.setPreference(
                                                         applicationContext,
                                                         getString(R.string.shared_preference_file_url),
                                                         fileUrl.value
                                                     );
-                                                    //        Remove previous jobs first
+                                                    // Remove previous jobs first
                                                     val workManager =
                                                         WorkManager.getInstance(applicationContext)
 
@@ -524,9 +506,10 @@ class MainActivity : ComponentActivity() {
                                                     fileDownloadInProgress.value = true
                                                     Thread {
                                                         try {
-                                                            databaseUpdater.updateDatabase(
+                                                            databaseUpdater.updateDatabaseFromUrl(
                                                                 applicationContext,
-                                                                fileUrl.value
+                                                                fileUrl.value,
+                                                                addedNumbersCount
                                                             );
                                                         } catch (e: IOException) {
                                                             Looper.prepare()
@@ -591,13 +574,16 @@ class MainActivity : ComponentActivity() {
                         onValueChange = { updateFrequency.value = it },
                         label = { Text("") },
                         modifier = Modifier
-                            .width(100.dp)
+                            .width(75.dp)
                             .padding(start = 8.dp, end = 8.dp)
                             .align(alignment = Alignment.Top)
                             .height(50.dp)
                     )
+//                    Text(
+//                        "day(s)"
+//                    )
                     Text(
-                        "day(s)"
+                        "minutes (min. value: 15)"
                     )
                 }
             }
