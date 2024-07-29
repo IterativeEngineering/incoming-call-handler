@@ -21,16 +21,13 @@ class UpdateDatabaseWorker(
     }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-//            Get file's URL from shared preferences
-
+        // Get file's URL from shared preferences
         val fileUrl = preferenceHelper.getPreference(
             applicationContext,
             applicationContext.getString(R.string.shared_preference_file_url)
         );
 
         logger.saveToLog(applicationContext, "Running automatic db update from $fileUrl")
-
-        preferenceHelper.setPreference(applicationContext, "saved_db_timestamp_pref", System.currentTimeMillis().toString())
 
         databaseUpdater.updateDatabaseFromUrl(applicationContext, fileUrl!!, null);
 

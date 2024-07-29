@@ -6,7 +6,6 @@ import androidx.compose.runtime.MutableState
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
-import java.util.HashMap
 
 
 class DatabaseManager {
@@ -53,27 +52,24 @@ class DatabaseManager {
 
             jsonReader.endArray();
 
-            context.openFileOutput(
-                context.getString(R.string.numbers_list_file),
-                Context.MODE_PRIVATE
-            ).use {
-                it.write(numbersMap.toString().toByteArray());
+            // Insert numbers to DB for persistent storage
+            val database = BlockedNumbersDatabase.getInstance(context);
+            val dao = database.blockedNumberDao();
 
-                preferenceHelper.setPreference(
-                    context,
-                    "saved_db_timestamp_pref",
-                    System.currentTimeMillis().toString()
-                );
+            // Remove previous numbers
+            dao.nukeTable();
 
-                val numbersMapSize = numbersMap.size
-                addedNumbersCount?.value = numbersMapSize
+            val numbersList = numbersMap.map { it -> BlockedNumber(phone = it.key, name = it.value) }
 
-                logger.saveToLog(
-                    context,
-                    "Loaded $numbersMapSize numbers"
-                );
-            }
+            val typedArray = numbersList.toTypedArray()
+
+            val perfStart = System.currentTimeMillis();
+
+            dao.insertAll(*typedArray);
+
+            addedNumbersCount?.value = dao.getSavedNumbersCount();
+
+            println("finished in " + (System.currentTimeMillis() - perfStart) + " " + dao.getSavedNumbersCount());
         }
-
     }
 }

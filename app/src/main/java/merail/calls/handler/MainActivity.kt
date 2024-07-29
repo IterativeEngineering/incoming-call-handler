@@ -2,7 +2,6 @@ package merail.calls.handler
 
 import android.Manifest
 import android.app.role.RoleManager
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -35,6 +34,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -47,6 +47,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.room.Room
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.firebase.crashlytics.buildtools.reloc.org.apache.commons.io.IOUtils
@@ -89,14 +90,14 @@ class MainActivity : ComponentActivity() {
     private lateinit var isSpecialPermissionButtonVisible: MutableState<Boolean>
     private lateinit var isRuntimePermissionsButtonVisible: MutableState<Boolean>
     private lateinit var rolePermissionButtonVisible: MutableState<Boolean>
-    private lateinit var addedNumbersCount: MutableState<Int>;
     private lateinit var logContents: MutableState<String>;
+
+    private var addedNumbersCount = mutableIntStateOf(0);
     private var dialogOpen = mutableStateOf(false);
     private var fileUrl = mutableStateOf("")
     private var updateAutomatically = mutableStateOf(false)
     private var updateFrequency = mutableStateOf("1")
     private var fileDownloadInProgress = mutableStateOf(false)
-
     private var blockTheCall = mutableStateOf(false)
     private var silenceTheCall = mutableStateOf(false)
     private var showInfoWindow = mutableStateOf(false)
@@ -161,7 +162,6 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier
                     .fillMaxSize(),
             ) {
-                addedNumbersCount = remember { mutableStateOf(0) }
                 Text(
                     "Welcome to the call blocker app.\nCurrently there are " + addedNumbersCount.value + " imported numbers.",
                     Modifier
@@ -229,16 +229,16 @@ class MainActivity : ComponentActivity() {
                     text = "Import numbers from URL",
                     isVisible = true
                 )
-                Button(
-                    onClick = { toggleLog() },
-                    text = "Show/hide log",
-                    isVisible = true
-                )
-                Button(
-                    onClick = { logger.clearLog(applicationContext); logContents.value = ""; },
-                    text = "Clear log permanently",
-                    isVisible = true
-                )
+//                Button(
+//                    onClick = { toggleLog() },
+//                    text = "Show/hide log",
+//                    isVisible = true
+//                )
+//                Button(
+//                    onClick = { logger.clearLog(applicationContext); logContents.value = ""; },
+//                    text = "Clear log permanently",
+//                    isVisible = true
+//                )
                 Text(
                     text = logContents.value,
                     style = Typography.titleSmall,
@@ -417,8 +417,18 @@ class MainActivity : ComponentActivity() {
         if (requestCode == 100 && resultCode === RESULT_OK && data != null) {
             val uri: Uri = data.data!!;
 
-            contentResolver.openInputStream(uri)?.use { inputStream ->
-                databaseManager.parseStream(inputStream, applicationContext, addedNumbersCount)
+            try {
+                Thread {
+                    contentResolver.openInputStream(uri)?.use { inputStream ->
+                        databaseManager.parseStream(inputStream, applicationContext, addedNumbersCount)
+                    }
+                }.start()
+
+            } catch (e: Exception) {
+                // Exception may occur when trying to load a file from Google Drive which no longer exists
+                val errorMsg = "Error occurred while loading a file $e"
+                showToast(errorMsg);
+                logger.saveToLog(applicationContext, errorMsg);
             }
         }
         super.onActivityResult(requestCode, resultCode, data)
@@ -615,16 +625,8 @@ class MainActivity : ComponentActivity() {
 
     private fun loadPersistentData() {
         // Load added numbers count
-        try {
-            applicationContext.openFileInput(getString(R.string.numbers_list_file)).use {
-                val myString: String = IOUtils.toString(it, "UTF-8");
-                val jsonObj = JSONObject(myString);
-                val numbersArray = jsonObj.getJSONArray("numbers")
-                addedNumbersCount.value = numbersArray.length()
-            }
-        } catch (e: Exception) {
-            // Exception will throw if there are no numbers yet
-        }
+        val database = BlockedNumbersDatabase.getInstance(applicationContext);
+        addedNumbersCount.value = database.blockedNumberDao().getSavedNumbersCount();
 
         blockTheCall.value =
             preferenceHelper.getPreference(applicationContext, "call_blocking_block").toBoolean()

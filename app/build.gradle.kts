@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("kotlin-kapt")
 }
 
 android {
@@ -43,4 +44,11 @@ dependencies {
     implementation("com.github.merail:request-permissions-tool:1.1.0")
     implementation("com.google.firebase:firebase-crashlytics-buildtools:3.0.2")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
+   
+    val room_version = "2.6.1"
+
+    implementation("androidx.room:room-runtime:$room_version")
+    annotationProcessor("androidx.room:room-compiler:$room_version")
+    // To use Kotlin annotation processing tool (kapt)
+    kapt("androidx.room:room-compiler:$room_version")
 }
