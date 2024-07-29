@@ -10,7 +10,6 @@
 //
 //class Scheduler {
 //    companion object {
-//        private const val jobTag = "blocked_numbers_list_update"
 //    }
 //
 //    fun scheduleAutomaticUpdate(url: String, frequencyInDays: Int) {

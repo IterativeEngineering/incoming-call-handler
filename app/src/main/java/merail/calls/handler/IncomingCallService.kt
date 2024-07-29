@@ -20,11 +20,8 @@ class IncomingCallService : CallScreeningService() {
         private val incomingCallAlert = IncomingCallAlert()
 
         private val countryCodesHelper = CountryCodes();
-
         private lateinit var numbersDb: JSONArray;
-
         private var loadedDbVersion = "";
-
         private val preferenceHelper = PreferenceHelper();
     }
 
@@ -34,50 +31,91 @@ class IncomingCallService : CallScreeningService() {
     }
 
     override fun onScreenCall(callDetails: Call.Details) {
-        if (callDetails.callDirection == Call.Details.DIRECTION_INCOMING || true) {
-            val phoneNumber = callDetails.handle.schemeSpecificPart
-            phoneNumber?.let {
-                incomingCallAlert.showWindow(this, it)
+        if (callDetails.callDirection == Call.Details.DIRECTION_INCOMING) {
+            var phoneNumber = callDetails.handle.schemeSpecificPart
+            OperationLogger().saveToLog(applicationContext, "Incoming call from " + phoneNumber);
+
+            if (!phoneNumber.startsWith("+")) {
+//                Add missing country prefix
+                val countryCodeValue =
+                    (this.getSystemService(TELEPHONY_SERVICE) as TelephonyManager).networkCountryIso
+                val countryPrefix = "+" + countryCodesHelper.getCode(countryCodeValue.uppercase())
+                phoneNumber = countryPrefix + phoneNumber
             }
 
-            val savedDbVersion = preferenceHelper.getPreference(applicationContext, "saved_db_timestamp_pref");
+            val savedDbVersion =
+                preferenceHelper.getPreference(applicationContext, "saved_db_timestamp_pref");
 
             if (loadedDbVersion !== savedDbVersion) {
-                    //                Let's load the DB first
+                // Let's load the DB first
                 try {
-                    applicationContext.openFileInput("numbers_list").use {
+                    applicationContext.openFileInput(getString(R.string.numbers_list_file)).use { it ->
                         loadedDbVersion = savedDbVersion!!;
                         val myString: String = IOUtils.toString(it, "UTF-8");
                         val jsonObj = JSONObject(myString);
                         val numbersArray = jsonObj.getJSONArray("numbers")
                         numbersDb = numbersArray
-                        val countryCodeValue = (this.getSystemService(TELEPHONY_SERVICE) as TelephonyManager).networkCountryIso
-                        val countryPrefix = "+" + countryCodesHelper.getCode(countryCodeValue.uppercase())
+
+                        val numberIsInTheDb = true
+
+                        if (numberIsInTheDb) {
+                            // Load users preferences
+                            val blockTheCall =
+                                preferenceHelper.getPreference(
+                                    applicationContext,
+                                    "call_blocking_block"
+                                )
+                                    .toBoolean()
+                            val silenceTheCall =
+                                preferenceHelper.getPreference(
+                                    applicationContext,
+                                    "call_blocking_silence"
+                                )
+                                    .toBoolean()
+                            val showInfoWindow =
+                                preferenceHelper.getPreference(
+                                    applicationContext,
+                                    "call_blocking_show_window"
+                                )
+                                    .toBoolean()
+
+                            if (showInfoWindow) {
+                                phoneNumber?.let {
+                                    incomingCallAlert.showWindow(this, it)
+                                }
+                            }
+                            if (blockTheCall || silenceTheCall) {
+                                val response = CallResponse.Builder()
+                                    // Sets whether the incoming call should be blocked.
+                                    .setDisallowCall(blockTheCall)
+                                    // Sets whether the incoming call should be rejected as if the user did so manually.
+                                    .setRejectCall(true)
+                                    // Sets whether ringing should be silenced for the incoming call.
+                                    .setSilenceCall(silenceTheCall)
+                                    // Sets whether the incoming call should not be displayed in the call log.
+                                    .setSkipCallLog(false)
+                                    // Sets whether a missed call notification should not be shown for the incoming call.
+                                    .setSkipNotification(false)
+                                    .build()
+
+                                respondToCall(callDetails, response)
+
+                            } else {
+                                //                        Handle in default dialer
+                                respondToCall(callDetails, CallResponse.Builder().build())
+                            }
+
+                        } else {
+                            //                        Handle in default dialer
+                            respondToCall(callDetails, CallResponse.Builder().build())
+                        }
                     }
                 } catch (e: Exception) {
-
+                    // Failed to load the DB (it doesn't exist?)
+                    // Handle in default dialer
+                    respondToCall(callDetails, CallResponse.Builder().build())
                 }
             }
-
-            OperationLogger().saveToLog(applicationContext, "Incoming call from " + phoneNumber);
-//                    val response = CallResponse.Builder()
-//                        // Sets whether the incoming call should be blocked.
-//                        .setDisallowCall(true)
-//                        // Sets whether the incoming call should be rejected as if the user did so manually.
-//                        .setRejectCall(true)
-//                        // Sets whether ringing should be silenced for the incoming call.
-//                        .setSilenceCall(true)
-//                        // Sets whether the incoming call should not be displayed in the call log.
-//                        .setSkipCallLog(false)
-//                        // Sets whether a missed call notification should not be shown for the incoming call.
-//                        .setSkipNotification(false)
-//                        .build()
-//
-//                    respondToCall(callDetails, response)
-
-//                        Handle in default dialer
-            respondToCall(callDetails, CallResponse.Builder().build())
-
         }
     }
 }

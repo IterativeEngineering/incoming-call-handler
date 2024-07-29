@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.google.firebase.crashlytics.buildtools.reloc.org.apache.commons.io.IOUtils
 import merail.calls.handler.ui.theme.IncomingCallHandlerTheme
 import merail.calls.handler.ui.theme.Typography
 import merail.calls.handler.workers.UpdateDatabaseWorker
@@ -92,11 +93,15 @@ class MainActivity : ComponentActivity() {
     private lateinit var rolePermissionButtonVisible: MutableState<Boolean>
     private lateinit var addedNumbersCount: MutableState<Int>;
     private lateinit var logContents: MutableState<String>;
-    private var dialogOpen = mutableStateOf(false) ;
+    private var dialogOpen = mutableStateOf(false);
     private var fileUrl = mutableStateOf("")
     private var updateAutomatically = mutableStateOf(false)
     private var updateFrequency = mutableStateOf("1")
     private var fileDownloadInProgress = mutableStateOf(false)
+
+    private var blockTheCall = mutableStateOf(false)
+    private var silenceTheCall = mutableStateOf(false)
+    private var showInfoWindow = mutableStateOf(false)
 
     //    Call handling
 
@@ -147,10 +152,7 @@ class MainActivity : ComponentActivity() {
             activity = this,
             requestedRole = rolePermission,
         )
-
-//        val sharedPreference =  getPreferences(Context.MODE_PRIVATE);
-//        val fileUrl = sharedPreference.getString(getString(R.string.shared_preference_file_url), "");
-//        System.out.println("file url is " + fileUrl);
+        loadPersistentData()
     }
 
     @Composable
@@ -182,76 +184,134 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf("")
                 }
 
-                    rolePermissionButtonVisible = remember {
-                        mutableStateOf(
-                            roleRequester.isRoleGranted().not()
+                rolePermissionButtonVisible = remember {
+                    mutableStateOf(
+                        roleRequester.isRoleGranted().not()
+                    )
+                }
+                Button(
+                    onClick = {
+                        rolePermissionClick.invoke()
+                    },
+                    text = "Get role permissions",
+                    isVisible = rolePermissionButtonVisible.value,
+                )
+                isRuntimePermissionsButtonVisible = remember {
+                    mutableStateOf(
+                        runtimePermissionRequester.areAllPermissionsGranted().not()
+                    )
+                }
+                Button(
+                    onClick = {
+                        onRuntimePermissionsClick.invoke()
+                    },
+                    text = "Get runtime permissions",
+                    isVisible = isRuntimePermissionsButtonVisible.value,
+                )
+                isSpecialPermissionButtonVisible = remember {
+                    mutableStateOf(
+                        specialPermissionRequester.isPermissionGranted().not()
+                    )
+                }
+                Button(
+                    onClick = {
+                        onSpecialPermissionClick.invoke()
+                    },
+                    text = "Get special permission",
+                    isVisible = isSpecialPermissionButtonVisible.value,
+                )
+                Button(
+                    onClick = {
+                        showFileChooser()
+                    },
+                    text = "Import numbers from a file",
+                    isVisible = true
+                )
+                Button(
+                    onClick = {
+                        importFromUrl()
+                    },
+                    text = "Import numbers from URL",
+                    isVisible = true
+                )
+                Button(
+                    onClick = { toggleLog() },
+                    text = "Show/hide log",
+                    isVisible = true
+                )
+                Button(
+                    onClick = { logger.clearLog(applicationContext); logContents.value = ""; },
+                    text = "Clear log permanently",
+                    isVisible = true
+                )
+                Text(
+                    text = logContents.value,
+                    style = Typography.titleSmall,
+                    modifier = Modifier
+                        .padding(top = 2.dp, start = 4.dp)
+                        .verticalScroll(
+                            rememberScrollState()
                         )
-                    }
-                    Button(
-                        onClick = {
-                            rolePermissionClick.invoke()
+                )
+                FileUrlDialog()
+                Text(
+                    text = "How to handle a call from a blocked number?",
+                    modifier = Modifier.padding(start = 5.dp)
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 0.dp, start = 0.dp)
+                ) {
+                    Checkbox(
+                        checked = blockTheCall.value,
+                        onCheckedChange = {
+                            saveCallHandlingPreference(
+                                blockTheCall,
+                                it,
+                                "call_blocking_block"
+                            )
                         },
-                        text = "Get role permissions",
-                        isVisible = rolePermissionButtonVisible.value,
-                    )
-                    isRuntimePermissionsButtonVisible = remember {
-                        mutableStateOf(
-                            runtimePermissionRequester.areAllPermissionsGranted().not()
-                        )
-                    }
-                    Button(
-                        onClick = {
-                            onRuntimePermissionsClick.invoke()
-                        },
-                        text = "Get runtime permissions",
-                        isVisible = isRuntimePermissionsButtonVisible.value,
-                    )
-                    isSpecialPermissionButtonVisible = remember {
-                        mutableStateOf(
-                            specialPermissionRequester.isPermissionGranted().not()
-                        )
-                    }
-                    Button(
-                        onClick = {
-                            onSpecialPermissionClick.invoke()
-                        },
-                        text = "Get special permission",
-                        isVisible = isSpecialPermissionButtonVisible.value,
-                    )
-                    Button(
-                        onClick = {
-                            showFileChooser()
-                        },
-                        text = "Import numbers from a file",
-                        isVisible = true
-                    )
-                    Button(
-                        onClick = {
-                            importFromUrl()
-                        },
-                        text = "Import numbers from URL",
-                        isVisible = true
-                    )
-                    Button(
-                        onClick = { toggleLog() },
-                        text = "Show/hide log",
-                        isVisible = true
-                    )
-                    Button(
-                        onClick = { logger.clearLog(applicationContext); logContents.value = ""; },
-                        text = "Clear log permanently",
-                        isVisible = true
                     )
                     Text(
-                        text = logContents.value,
-                        style = Typography.titleSmall,
-                        modifier = Modifier
-                            .padding(top = 2.dp, start = 4.dp)
-                            .verticalScroll(
-                                rememberScrollState()
-                            )
+                        "Block the call"
                     )
-                    FileUrlDialog()
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 0.dp)
+                ) {
+                    Checkbox(
+                        checked = silenceTheCall.value,
+                        onCheckedChange = {
+                            saveCallHandlingPreference(
+                                silenceTheCall,
+                                it,
+                                "call_blocking_silence"
+                            )
+                        }
+                    )
+                    Text(
+                        "Silence the call"
+                    )
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 0.dp)
+                ) {
+                    Checkbox(
+                        checked = showInfoWindow.value,
+                        onCheckedChange = {
+                            saveCallHandlingPreference(
+                                showInfoWindow,
+                                it,
+                                "call_blocking_show_window"
+                            )
+                        }
+                    )
+                    Text(
+                        "Show info window"
+                    )
+                }
             }
         }
     }
@@ -398,7 +458,6 @@ class MainActivity : ComponentActivity() {
 //            val jParser: JsonParser = jfactory.createParser(stringBuilder.toString())
 
 
-
             val jsonObj = JSONObject(stringBuilder.toString());
             val numbersArray = jsonObj.getJSONArray("numbers")
             val numbersArrayLen = numbersArray.length()
@@ -421,7 +480,11 @@ class MainActivity : ComponentActivity() {
                 "Loaded " + numbersArrayLen + " numbers from " + uri
             );
 
-            preferenceHelper.setPreference(applicationContext, "saved_db_timestamp_pref", System.currentTimeMillis().toString())
+            preferenceHelper.setPreference(
+                applicationContext,
+                "saved_db_timestamp_pref",
+                System.currentTimeMillis().toString()
+            )
 
             // Read the numbers list
 //            applicationContext.openFileInput(filename).use {
@@ -505,33 +568,50 @@ class MainActivity : ComponentActivity() {
                                             onClick = {
                                                 if (updateAutomatically.value) {
                                                     //                                                    Schedule auto update job
-                                                    preferenceHelper.setPreference(applicationContext, getString(R.string.shared_preference_file_url), fileUrl.value);
+                                                    preferenceHelper.setPreference(
+                                                        applicationContext,
+                                                        getString(R.string.shared_preference_file_url),
+                                                        fileUrl.value
+                                                    );
                                                     //        Remove previous jobs first
-                                                    WorkManager.getInstance().cancelAllWorkByTag(getString(R.string.auto_update_job_tag))
-                                                    val saveRequest = PeriodicWorkRequestBuilder<UpdateDatabaseWorker>(15, TimeUnit.MINUTES)
-                                                        // Additional configuration
-                                                        .build()
+                                                    val workManager =
+                                                        WorkManager.getInstance(applicationContext)
 
+                                                    workManager.cancelAllWorkByTag(getString(R.string.auto_update_job_tag))
+                                                    val saveRequest =
+                                                        PeriodicWorkRequestBuilder<UpdateDatabaseWorker>(
+                                                            updateFrequency.value.toLong(),
+                                                            TimeUnit.DAYS
+                                                        )
+                                                            .addTag(getString(R.string.auto_update_job_tag))
+                                                            .build()
+                                                    workManager.enqueue(saveRequest);
+                                                    dialogOpen.value = false
+
+                                                } else {
+                                                    fileDownloadInProgress.value = true
+                                                    Thread {
+                                                        try {
+                                                            databaseUpdater.updateDatabase(
+                                                                applicationContext,
+                                                                fileUrl.value
+                                                            );
+                                                        } catch (e: IOException) {
+                                                            Looper.prepare()
+                                                            showToast("Error occurred while fetching a file from " + fileUrl.value);
+                                                        } finally {
+                                                            dialogOpen.value = false
+                                                            fileDownloadInProgress.value = false
+                                                        }
+                                                    }.start()
                                                 }
-
-                                                fileDownloadInProgress.value = true
-                                                Thread {
-                                                    try {
-                                                        databaseUpdater.updateDatabase(applicationContext, fileUrl.value);
-                                                    } catch (e: IOException) {
-                                                        Looper.prepare()
-                                                        showToast("Error occurred while fetching a file from " + fileUrl.value);
-                                                    } finally {
-                                                        dialogOpen.value = false
-                                                        fileDownloadInProgress.value = false
-                                                    }
-                                                }.start()
                                             },
                                             modifier = Modifier.padding(8.dp),
                                         ) {
                                             Text("Confirm")
                                         }
                                     }
+
                                     fileDownloadInProgress.value -> {
                                         TextButton(modifier = Modifier
                                             .alpha(0.5F)
@@ -553,7 +633,8 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun AutoUpdateCheckbox() {
         Row(
-            verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 0.dp)
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(bottom = 0.dp)
         ) {
             Checkbox(
                 checked = updateAutomatically.value,
@@ -565,7 +646,10 @@ class MainActivity : ComponentActivity() {
         }
         when {
             updateAutomatically.value -> {
-                Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 0.dp, start = 12.dp)) {
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    modifier = Modifier.padding(top = 0.dp, start = 12.dp)
+                ) {
                     Text(
                         "Update frequency:"
                     )
@@ -598,6 +682,40 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    private fun saveCallHandlingPreference(
+        variable: MutableState<Boolean>,
+        newVal: Boolean,
+        persistenPreferenceKey: String
+    ) {
+        variable.value = newVal;
+        preferenceHelper.setPreference(
+            applicationContext,
+            persistenPreferenceKey,
+            newVal.toString()
+        )
+    }
+
+    private fun loadPersistentData() {
+        // Load added numbers count
+        try {
+            applicationContext.openFileInput(getString(R.string.numbers_list_file)).use {
+                val myString: String = IOUtils.toString(it, "UTF-8");
+                val jsonObj = JSONObject(myString);
+                val numbersArray = jsonObj.getJSONArray("numbers")
+                addedNumbersCount.value = numbersArray.length()
+            }
+        } catch (e: Exception) {
+            // Exception will throw if there are no numbers yet
+        }
+
+        blockTheCall.value =
+            preferenceHelper.getPreference(applicationContext, "call_blocking_block").toBoolean()
+        silenceTheCall.value =
+            preferenceHelper.getPreference(applicationContext, "call_blocking_silence").toBoolean()
+        showInfoWindow.value =
+            preferenceHelper.getPreference(applicationContext, "call_blocking_show_window")
+                .toBoolean()
+    }
 
     /**
      * Shows [message] in a Toast.

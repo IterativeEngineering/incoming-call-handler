@@ -6,4 +6,5 @@
     <string name="call_blocking_block">call_blocking_block</string>
     <string name="call_blocking_silence">call_blocking_silence</string>
     <string name="call_blocking_show_window">call_blocking_show_window</string>
+    <string name="numbers_list_file">numbers_list</string>
 </resources>
