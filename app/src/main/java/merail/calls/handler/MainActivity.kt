@@ -47,6 +47,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.work.Constraints
+import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import merail.calls.handler.ui.theme.IncomingCallHandlerTheme
@@ -498,13 +500,19 @@ class MainActivity : ComponentActivity() {
                                                     val workManager =
                                                         WorkManager.getInstance(applicationContext)
 
-                                                    workManager.cancelAllWorkByTag(getString(R.string.auto_update_job_tag))
+                                                    workManager.cancelAllWorkByTag(getString(R.string.auto_update_job_tag));
+
+                                                    val jobConstraints = Constraints.Builder()
+                                                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                                                        .build();
+
                                                     val saveRequest =
                                                         PeriodicWorkRequestBuilder<UpdateDatabaseWorker>(
                                                             updateFrequency.value.toLong(),
                                                             TimeUnit.MINUTES
                                                         )
                                                             .addTag(getString(R.string.auto_update_job_tag))
+                                                            .setConstraints(jobConstraints)
                                                             .build()
                                                     workManager.enqueue(saveRequest);
                                                     dialogOpen.value = false
