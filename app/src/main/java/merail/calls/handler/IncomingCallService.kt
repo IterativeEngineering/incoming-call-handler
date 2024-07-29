@@ -11,7 +11,6 @@ import com.google.firebase.crashlytics.buildtools.reloc.org.apache.commons.io.IO
 import org.json.JSONArray
 import org.json.JSONObject
 
-
 @RequiresApi(Build.VERSION_CODES.N)
 class IncomingCallService : CallScreeningService() {
 
@@ -49,67 +48,72 @@ class IncomingCallService : CallScreeningService() {
             if (loadedDbVersion !== savedDbVersion) {
                 // Let's load the DB first
                 try {
-                    applicationContext.openFileInput(getString(R.string.numbers_list_file)).use { it ->
-                        loadedDbVersion = savedDbVersion!!;
-                        val myString: String = IOUtils.toString(it, "UTF-8");
-                        val jsonObj = JSONObject(myString);
-                        val numbersArray = jsonObj.getJSONArray("numbers")
-                        numbersDb = numbersArray
+                    applicationContext.openFileInput(getString(R.string.numbers_list_file))
+                        .use { it ->
+                            loadedDbVersion = savedDbVersion!!;
+                            val myString: String = IOUtils.toString(it, "UTF-8");
+                            val jsonObj = JSONObject(myString);
+                            val numbersArray = jsonObj.getJSONArray("numbers")
+                            numbersDb = numbersArray
 
-                        val numberIsInTheDb = true
+                            val numberIsInTheDb = true
 
-                        if (numberIsInTheDb) {
-                            // Load users preferences
-                            val blockTheCall =
-                                preferenceHelper.getPreference(
-                                    applicationContext,
-                                    "call_blocking_block"
-                                )
-                                    .toBoolean()
-                            val silenceTheCall =
-                                preferenceHelper.getPreference(
-                                    applicationContext,
-                                    "call_blocking_silence"
-                                )
-                                    .toBoolean()
-                            val showInfoWindow =
-                                preferenceHelper.getPreference(
-                                    applicationContext,
-                                    "call_blocking_show_window"
-                                )
-                                    .toBoolean()
+                            if (numberIsInTheDb) {
+                                // Load users preferences
+                                val blockTheCall =
+                                    preferenceHelper.getPreference(
+                                        applicationContext,
+                                        "call_blocking_block"
+                                    )
+                                        .toBoolean()
+                                val silenceTheCall =
+                                    preferenceHelper.getPreference(
+                                        applicationContext,
+                                        "call_blocking_silence"
+                                    )
+                                        .toBoolean()
+                                val showInfoWindow =
+                                    preferenceHelper.getPreference(
+                                        applicationContext,
+                                        "call_blocking_show_window"
+                                    )
+                                        .toBoolean()
 
-                            if (showInfoWindow) {
-                                phoneNumber?.let {
-                                    incomingCallAlert.showWindow(this, it)
+                                if (showInfoWindow) {
+                                    phoneNumber?.let {
+                                        var infoWindowText = "Warning: " + it;
+                                        if (true) {
+                                            infoWindowText += "(name)"
+                                        }
+                                        infoWindowText += " is in the blocked numbers database.";
+                                        incomingCallAlert.showWindow(this, infoWindowText)
+                                    }
                                 }
-                            }
-                            if (blockTheCall || silenceTheCall) {
-                                val response = CallResponse.Builder()
-                                    // Sets whether the incoming call should be blocked.
-                                    .setDisallowCall(blockTheCall)
-                                    // Sets whether the incoming call should be rejected as if the user did so manually.
-                                    .setRejectCall(true)
-                                    // Sets whether ringing should be silenced for the incoming call.
-                                    .setSilenceCall(silenceTheCall)
-                                    // Sets whether the incoming call should not be displayed in the call log.
-                                    .setSkipCallLog(false)
-                                    // Sets whether a missed call notification should not be shown for the incoming call.
-                                    .setSkipNotification(false)
-                                    .build()
+                                if (blockTheCall || silenceTheCall) {
+                                    val response = CallResponse.Builder()
+                                        // Sets whether the incoming call should be blocked.
+                                        .setDisallowCall(blockTheCall)
+                                        // Sets whether the incoming call should be rejected as if the user did so manually.
+                                        .setRejectCall(true)
+                                        // Sets whether ringing should be silenced for the incoming call.
+                                        .setSilenceCall(silenceTheCall)
+                                        // Sets whether the incoming call should not be displayed in the call log.
+                                        .setSkipCallLog(false)
+                                        // Sets whether a missed call notification should not be shown for the incoming call.
+                                        .setSkipNotification(false)
+                                        .build()
 
-                                respondToCall(callDetails, response)
+                                    respondToCall(callDetails, response)
+                                } else {
+                                    //                        Handle in default dialer
+                                    respondToCall(callDetails, CallResponse.Builder().build())
+                                }
 
                             } else {
                                 //                        Handle in default dialer
                                 respondToCall(callDetails, CallResponse.Builder().build())
                             }
-
-                        } else {
-                            //                        Handle in default dialer
-                            respondToCall(callDetails, CallResponse.Builder().build())
                         }
-                    }
                 } catch (e: Exception) {
                     // Failed to load the DB (it doesn't exist?)
                     // Handle in default dialer
