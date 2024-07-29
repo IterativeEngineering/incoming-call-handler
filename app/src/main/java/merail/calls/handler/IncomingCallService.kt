@@ -22,6 +22,7 @@ class IncomingCallService : CallScreeningService() {
         private lateinit var numbersDb: JSONArray;
         private var loadedDbVersion = "";
         private val preferenceHelper = PreferenceHelper();
+        private val logger = OperationLogger();
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -32,7 +33,7 @@ class IncomingCallService : CallScreeningService() {
     override fun onScreenCall(callDetails: Call.Details) {
         if (callDetails.callDirection == Call.Details.DIRECTION_INCOMING) {
             var phoneNumber = callDetails.handle.schemeSpecificPart
-            OperationLogger().saveToLog(applicationContext, "Incoming call from " + phoneNumber);
+            logger.saveToLog(applicationContext, "Incoming call from " + phoneNumber);
 
             if (!phoneNumber.startsWith("+")) {
 //                Add missing country prefix
@@ -56,70 +57,88 @@ class IncomingCallService : CallScreeningService() {
                             val numbersArray = jsonObj.getJSONArray("numbers")
                             numbersDb = numbersArray
 
-                            val numberIsInTheDb = true
-
-                            if (numberIsInTheDb) {
-                                // Load users preferences
-                                val blockTheCall =
-                                    preferenceHelper.getPreference(
-                                        applicationContext,
-                                        "call_blocking_block"
-                                    )
-                                        .toBoolean()
-                                val silenceTheCall =
-                                    preferenceHelper.getPreference(
-                                        applicationContext,
-                                        "call_blocking_silence"
-                                    )
-                                        .toBoolean()
-                                val showInfoWindow =
-                                    preferenceHelper.getPreference(
-                                        applicationContext,
-                                        "call_blocking_show_window"
-                                    )
-                                        .toBoolean()
-
-                                if (showInfoWindow) {
-                                    phoneNumber?.let {
-                                        var infoWindowText = "Warning: " + it;
-                                        if (true) {
-                                            infoWindowText += "(name)"
-                                        }
-                                        infoWindowText += " is in the blocked numbers database.";
-                                        incomingCallAlert.showWindow(this, infoWindowText)
-                                    }
-                                }
-                                if (blockTheCall || silenceTheCall) {
-                                    val response = CallResponse.Builder()
-                                        // Sets whether the incoming call should be blocked.
-                                        .setDisallowCall(blockTheCall)
-                                        // Sets whether the incoming call should be rejected as if the user did so manually.
-                                        .setRejectCall(true)
-                                        // Sets whether ringing should be silenced for the incoming call.
-                                        .setSilenceCall(silenceTheCall)
-                                        // Sets whether the incoming call should not be displayed in the call log.
-                                        .setSkipCallLog(false)
-                                        // Sets whether a missed call notification should not be shown for the incoming call.
-                                        .setSkipNotification(false)
-                                        .build()
-
-                                    respondToCall(callDetails, response)
-                                } else {
-                                    //                        Handle in default dialer
-                                    respondToCall(callDetails, CallResponse.Builder().build())
-                                }
-
-                            } else {
-                                //                        Handle in default dialer
-                                respondToCall(callDetails, CallResponse.Builder().build())
-                            }
+                            handleIncomingCall(phoneNumber, callDetails);
                         }
                 } catch (e: Exception) {
                     // Failed to load the DB (it doesn't exist?)
                     // Handle in default dialer
                     respondToCall(callDetails, CallResponse.Builder().build())
                 }
+            } else {
+                handleIncomingCall(phoneNumber, callDetails);
             }
+        }
+    }
+
+    private fun handleIncomingCall(phoneNumber: String, callDetails: Call.Details) {
+        val perfStart = System.currentTimeMillis();
+
+        val numberIsInTheDb = true
+
+        if (numberIsInTheDb) {
+            // Load users preferences
+            val blockTheCall =
+                preferenceHelper.getPreference(
+                    applicationContext,
+                    "call_blocking_block"
+                )
+                    .toBoolean()
+            val silenceTheCall =
+                preferenceHelper.getPreference(
+                    applicationContext,
+                    "call_blocking_silence"
+                )
+                    .toBoolean()
+            val showInfoWindow =
+                preferenceHelper.getPreference(
+                    applicationContext,
+                    "call_blocking_show_window"
+                )
+                    .toBoolean()
+
+            if (showInfoWindow) {
+                phoneNumber?.let {
+                    var infoWindowText = "Warning: " + it;
+                    if (true) {
+                        infoWindowText += "(name)"
+                    }
+                    infoWindowText += " is in the blocked numbers database.";
+                    incomingCallAlert.showWindow(this, infoWindowText)
+                }
+            }
+            if (blockTheCall || silenceTheCall) {
+                var logMessage = "Handling incoming call from " + phoneNumber + ":  ";
+                if (blockTheCall) {
+                    logMessage += "block "
+                }
+                if (silenceTheCall) {
+                    logMessage += "silence"
+                }
+                logger.saveToLog(applicationContext, logMessage);
+                val response = CallResponse.Builder()
+                    // Sets whether the incoming call should be blocked.
+                    .setDisallowCall(blockTheCall)
+                    // Sets whether the incoming call should be rejected as if the user did so manually.
+                    .setRejectCall(true)
+                    // Sets whether ringing should be silenced for the incoming call.
+                    .setSilenceCall(silenceTheCall)
+                    // Sets whether the incoming call should not be displayed in the call log.
+                    .setSkipCallLog(false)
+                    // Sets whether a missed call notification should not be shown for the incoming call.
+                    .setSkipNotification(false)
+                    .build()
+
+                respondToCall(callDetails, response)
+            } else {
+                //                        Handle in default dialer
+                logger.saveToLog(applicationContext, "Handling incoming call from " + phoneNumber + " in the default dialer");
+                respondToCall(callDetails, CallResponse.Builder().build())
+            }
+            System.out.println("Handled call from " + phoneNumber + " in " + (System.currentTimeMillis() - perfStart));
+        } else {
+            //                        Handle in default dialer
+            logger.saveToLog(applicationContext, "Handling incoming call from " + phoneNumber + " in the default dialer");
+            respondToCall(callDetails, CallResponse.Builder().build())
         }
     }
 }

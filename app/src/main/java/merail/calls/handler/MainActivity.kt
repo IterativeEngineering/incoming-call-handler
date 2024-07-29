@@ -7,7 +7,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Looper
-import android.util.JsonReader
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -62,9 +61,7 @@ import merail.tools.permissions.runtime.RuntimePermissionState
 import merail.tools.permissions.special.SpecialPermissionRequester
 import merail.tools.permissions.special.SpecialPermissionState
 import org.json.JSONObject
-import java.io.BufferedReader
 import java.io.IOException
-import java.io.InputStreamReader
 import java.util.concurrent.TimeUnit
 
 
@@ -76,6 +73,7 @@ class MainActivity : ComponentActivity() {
     private val logger = OperationLogger();
     private val preferenceHelper = PreferenceHelper();
     private val databaseUpdater = UpdateDatabase();
+    private val databaseManager = DatabaseManager()
 
     private val specialPermission = Manifest.permission.SYSTEM_ALERT_WINDOW
 
@@ -422,90 +420,24 @@ class MainActivity : ComponentActivity() {
         if (requestCode == 100 && resultCode === RESULT_OK && data != null) {
             val performanceMarkStart = System.currentTimeMillis()
             val uri: Uri = data.getData()!!;
-            val path = uri?.getPath();
-//            val file = File(path);
-//            val inStream = contentResolver.openInputStream(uri)
-
-            var text = ""
 
             val stringBuilder = StringBuilder()
             contentResolver.openInputStream(uri)?.use { inputStream ->
-                BufferedReader(InputStreamReader(inputStream)).use { reader ->
-                    val numbersArray: MutableList<Object> = ArrayList();
-
-                    val jsonReader = JsonReader(reader);
-                    jsonReader.beginArray();
-
-                    while (jsonReader.hasNext()) {
-//                        numbersArray.add()
-                    }
-
-                    jsonReader.endArray();
-
-
-                    System.out.println("numbersArray " + numbersArray);
-
-
-//                    var line: String? = reader.readLine()
-//                    while (line != null) {
-//                        stringBuilder.append(line)
-//                        line = reader.readLine()
-//                    }
-                }
+                databaseManager.parseStream(inputStream, applicationContext)
             }
 
-//            val jfactory: JsonFactory = JsonFactory()
-//            val jParser: JsonParser = jfactory.createParser(stringBuilder.toString())
-
-
-            val jsonObj = JSONObject(stringBuilder.toString());
-            val numbersArray = jsonObj.getJSONArray("numbers")
-            val numbersArrayLen = numbersArray.length()
-            System.out.println("len is $numbersArrayLen")
-
-            addedNumbersCount.value = numbersArrayLen;
-
-            val filename = "numbers_list"
-            applicationContext.openFileOutput(filename, Context.MODE_PRIVATE).use {
-                it.write(stringBuilder.toString().toByteArray());
-                text =
-                    text + " finished in " + (System.currentTimeMillis() - performanceMarkStart) + "ms, got " + numbersArrayLen + " numbers"
-                System.out.println(" finished in " + (System.currentTimeMillis() - performanceMarkStart) + "ms, got " + numbersArrayLen + " numbers");
-            }
-
-            System.out.println("file saved");
-
-            logger.saveToLog(
-                applicationContext,
-                "Loaded " + numbersArrayLen + " numbers from " + uri
-            );
-
-            preferenceHelper.setPreference(
-                applicationContext,
-                "saved_db_timestamp_pref",
-                System.currentTimeMillis().toString()
-            )
-
-            // Read the numbers list
-//            applicationContext.openFileInput(filename).use {
-//                val myString: String = IOUtils.toString(it, "UTF-8");
+//            val jsonObj = JSONObject(stringBuilder.toString());
+//            val numbersArray = jsonObj.getJSONArray("numbers")
+//            val numbersArrayLen = numbersArray.length()
+//            System.out.println("len is $numbersArrayLen")
 //
-//                val jsonObj = JSONObject(stringBuilder.toString());
-//                val numbersArray = jsonObj.getJSONArray("numbers")
-//                System.out.println("dupax " + numbersArray)
-//            }
-
-//            val stringBuilder2 = StringBuilder()
-//            contentResolver.openInputStream(uri)?.use { inputStream ->
-//                BufferedReader(InputStreamReader(inputStream)).use { reader ->
-//                    var line: String? = reader.readLine()
-//                    while (line != null) {
-//                        stringBuilder.append(line)
-//                        line = reader.readLine()
-//                    }
-//                }
-//            }
-
+//            addedNumbersCount.value = numbersArrayLen;
+//
+//            preferenceHelper.setPreference(
+//                applicationContext,
+//                "saved_db_timestamp_pref",
+//                System.currentTimeMillis().toString()
+//            )
         }
         super.onActivityResult(requestCode, resultCode, data)
     }
@@ -581,7 +513,7 @@ class MainActivity : ComponentActivity() {
                                                     val saveRequest =
                                                         PeriodicWorkRequestBuilder<UpdateDatabaseWorker>(
                                                             updateFrequency.value.toLong(),
-                                                            TimeUnit.DAYS
+                                                            TimeUnit.MINUTES
                                                         )
                                                             .addTag(getString(R.string.auto_update_job_tag))
                                                             .build()
@@ -685,12 +617,12 @@ class MainActivity : ComponentActivity() {
     private fun saveCallHandlingPreference(
         variable: MutableState<Boolean>,
         newVal: Boolean,
-        persistenPreferenceKey: String
+        persistentPreferenceKey: String
     ) {
         variable.value = newVal;
         preferenceHelper.setPreference(
             applicationContext,
-            persistenPreferenceKey,
+            persistentPreferenceKey,
             newVal.toString()
         )
     }
