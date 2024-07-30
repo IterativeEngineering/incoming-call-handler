@@ -50,6 +50,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.work.Constraints
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import merail.calls.handler.ui.theme.IncomingCallHandlerTheme
 import merail.calls.handler.ui.theme.Typography
@@ -70,6 +71,8 @@ class MainActivity : ComponentActivity() {
     private lateinit var specialPermissionRequester: SpecialPermissionRequester
     private lateinit var runtimePermissionRequester: RuntimePermissionRequester
     private lateinit var roleRequester: RoleRequester
+    private lateinit var workManager: WorkManager;
+    private lateinit var database: BlockedNumbersDatabase;
     private val logger = OperationLogger();
     private val preferenceHelper = PreferenceHelper();
     private val databaseUpdater = UpdateDatabaseFromUrl();
@@ -150,7 +153,13 @@ class MainActivity : ComponentActivity() {
             activity = this,
             requestedRole = rolePermission,
         )
-        loadPersistentData()
+        database = BlockedNumbersDatabase.getInstance(applicationContext);
+        workManager = WorkManager.getInstance(applicationContext);
+        loadPersistentData();
+        workManager.getWorkInfosByTagLiveData(getString(R.string.auto_update_job_tag)).observeForever { jobs ->
+            // Update added numbers count
+            addedNumbersCount.value = database.blockedNumberDao().getSavedNumbersCount();
+        }
     }
 
     @Composable
@@ -267,7 +276,10 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                     Text(
-                        "Block the call"
+                        text = "Block the call",
+                        onClick = {
+                            importFromUrl()
+                        }
                     )
                 }
                 Row(
@@ -497,9 +509,6 @@ class MainActivity : ComponentActivity() {
                                                         fileUrl.value
                                                     );
                                                     // Remove previous jobs first
-                                                    val workManager =
-                                                        WorkManager.getInstance(applicationContext)
-
                                                     workManager.cancelAllWorkByTag(getString(R.string.auto_update_job_tag));
 
                                                     val jobConstraints = Constraints.Builder()
@@ -516,7 +525,6 @@ class MainActivity : ComponentActivity() {
                                                             .build()
                                                     workManager.enqueue(saveRequest);
                                                     dialogOpen.value = false
-
                                                 } else {
                                                     fileDownloadInProgress.value = true
                                                     Thread {
@@ -630,7 +638,6 @@ class MainActivity : ComponentActivity() {
 
     private fun loadPersistentData() {
         // Load added numbers count
-        val database = BlockedNumbersDatabase.getInstance(applicationContext);
         addedNumbersCount.value = database.blockedNumberDao().getSavedNumbersCount();
 
         blockTheCall.value =
