@@ -276,10 +276,7 @@ class MainActivity : ComponentActivity() {
                         },
                     )
                     Text(
-                        text = "Block the call",
-                        onClick = {
-                            importFromUrl()
-                        }
+                        "Block the call"
                     )
                 }
                 Row(
