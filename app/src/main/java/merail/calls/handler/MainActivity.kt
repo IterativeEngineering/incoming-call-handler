@@ -9,6 +9,7 @@ import android.os.Looper
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -41,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -50,7 +52,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.work.Constraints
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import merail.calls.handler.ui.theme.IncomingCallHandlerTheme
 import merail.calls.handler.ui.theme.Typography
@@ -64,7 +65,6 @@ import merail.tools.permissions.special.SpecialPermissionRequester
 import merail.tools.permissions.special.SpecialPermissionState
 import java.io.IOException
 import java.util.concurrent.TimeUnit
-
 
 class MainActivity : ComponentActivity() {
 
@@ -259,21 +259,22 @@ class MainActivity : ComponentActivity() {
                 FileUrlDialog()
                 Text(
                     text = "How to handle a call from a blocked number?",
-                    modifier = Modifier.padding(start = 5.dp)
+                    modifier = Modifier.padding(start = 5.dp, bottom = 4.dp)
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 0.dp, start = 0.dp)
+                    modifier = Modifier.padding(bottom = 0.dp, start = 4.dp).clickable(role = Role.Checkbox, onClick = {
+                        saveCallHandlingPreference(
+                            blockTheCall,
+                            !blockTheCall.value,
+                            "call_blocking_block"
+                        )
+                    })
                 ) {
                     Checkbox(
                         checked = blockTheCall.value,
-                        onCheckedChange = {
-                            saveCallHandlingPreference(
-                                blockTheCall,
-                                it,
-                                "call_blocking_block"
-                            )
-                        },
+                        onCheckedChange = null,
+                        modifier = Modifier.padding(end = 5.dp)
                     )
                     Text(
                         "Block the call"
@@ -281,17 +282,18 @@ class MainActivity : ComponentActivity() {
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 0.dp)
+                    modifier = Modifier.padding(bottom = 0.dp, start = 4.dp, top = 4.dp).clickable(role = Role.Checkbox, onClick = {
+                        saveCallHandlingPreference(
+                            silenceTheCall,
+                            !silenceTheCall.value,
+                            "call_blocking_silence"
+                        )
+                    })
                 ) {
                     Checkbox(
                         checked = silenceTheCall.value,
-                        onCheckedChange = {
-                            saveCallHandlingPreference(
-                                silenceTheCall,
-                                it,
-                                "call_blocking_silence"
-                            )
-                        }
+                        onCheckedChange = null,
+                        modifier = Modifier.padding(end = 5.dp)
                     )
                     Text(
                         "Silence the call"
@@ -299,17 +301,18 @@ class MainActivity : ComponentActivity() {
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 0.dp)
+                    modifier = Modifier.padding(bottom = 0.dp, start = 4.dp, top = 4.dp).clickable(role = Role.Checkbox, onClick = {
+                        saveCallHandlingPreference(
+                            showInfoWindow,
+                            !showInfoWindow.value,
+                            "call_blocking_show_window"
+                        )
+                    })
                 ) {
                     Checkbox(
                         checked = showInfoWindow.value,
-                        onCheckedChange = {
-                            saveCallHandlingPreference(
-                                showInfoWindow,
-                                it,
-                                "call_blocking_show_window"
-                            )
-                        }
+                        onCheckedChange = null,
+                        modifier = Modifier.padding(end = 5.dp)
                     )
                     Text(
                         "Show info window"
@@ -569,11 +572,14 @@ class MainActivity : ComponentActivity() {
     fun AutoUpdateCheckbox() {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 0.dp)
+            modifier = Modifier.padding(bottom = 0.dp).clickable(role = Role.Checkbox, onClick = {
+                updateAutomatically.value = !updateAutomatically.value
+            })
         ) {
             Checkbox(
                 checked = updateAutomatically.value,
-                onCheckedChange = { updateAutomatically.value = it }
+                onCheckedChange = null,
+                modifier = Modifier.padding(end = 5.dp)
             )
             Text(
                 "Update automatically"
@@ -595,7 +601,7 @@ class MainActivity : ComponentActivity() {
                         label = { Text("") },
                         modifier = Modifier
                             .width(75.dp)
-                            .padding(start = 8.dp, end = 8.dp)
+                            .padding(start = 0.dp, end = 0.dp)
                             .align(alignment = Alignment.Top)
                             .height(50.dp)
                     )
