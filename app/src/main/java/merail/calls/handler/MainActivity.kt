@@ -221,8 +221,17 @@ class MainActivity : ComponentActivity() {
                         onSpecialPermissionClick.invoke()
                     },
                     text = "Get special permission",
-                    isVisible = isSpecialPermissionButtonVisible.value,
+                    isVisible = isSpecialPermissionButtonVisible.value && showInfoWindow.value,
                 )
+                when {
+                    isSpecialPermissionButtonVisible.value && showInfoWindow.value -> {
+                        Text(
+
+                            text = "Special permission is required to show the info window",
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    }
+                }
                 Button(
                     onClick = {
                         showFileChooser()
