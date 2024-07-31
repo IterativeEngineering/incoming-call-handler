@@ -24,54 +24,58 @@ class DatabaseManager {
             val jsonReader = JsonReader(reader);
             jsonReader.beginArray();
 
-            while (jsonReader.hasNext()) {
-                jsonReader.beginObject();
-
-                var phone = "";
-                var name = "";
-
+            try {
                 while (jsonReader.hasNext()) {
-                    val key = jsonReader.nextName();
-                    val nextString = jsonReader.nextString();
+                    jsonReader.beginObject();
 
-                    if (key == "phone") {
-                        phone = nextString;
-                    } else if (key == "name") {
-                        name = nextString;
+                    var phone = "";
+                    var name = "";
+
+                    while (jsonReader.hasNext()) {
+                        val key = jsonReader.nextName();
+                        val nextString = jsonReader.nextString();
+
+                        if (key == "phone") {
+                            phone = nextString;
+                        } else if (key == "name") {
+                            name = nextString;
+                        }
+                    }
+                    jsonReader.endObject();
+
+                    val existingBlockedEntityName = numbersMap[phone]
+                    if (existingBlockedEntityName !== null) {
+                        numbersMap[phone] = "$existingBlockedEntityName | $name";
+                    } else {
+                        numbersMap[phone] = name;
                     }
                 }
-                jsonReader.endObject();
 
-                val existingBlockedEntityName = numbersMap[phone]
-                if (existingBlockedEntityName !== null) {
-                    numbersMap[phone] = "$existingBlockedEntityName | $name";
-                } else {
-                    numbersMap[phone] = name;
-                }
+                jsonReader.endArray();
+
+                // Insert numbers to DB for persistent storage
+                val database = BlockedNumbersDatabase.getInstance(context);
+                val dao = database.blockedNumberDao();
+
+                // Remove previous numbers
+                dao.nukeTable();
+
+                val numbersList = numbersMap.map { it -> BlockedNumber(phone = it.key, name = it.value) }
+
+                val typedArray = numbersList.toTypedArray()
+
+                val perfStart = System.currentTimeMillis();
+
+                dao.insertAll(*typedArray);
+
+                addedNumbersCount?.value = dao.getSavedNumbersCount();
+
+                preferenceHelper.setPreference(context, "db_update_timestamp", System.currentTimeMillis().toString());
+
+                println("finished in " + (System.currentTimeMillis() - perfStart) + " " + dao.getSavedNumbersCount());
+            } catch (exception: Exception) {
+                // Exception may be thrown when JSON is invalid
             }
-
-            jsonReader.endArray();
-
-            // Insert numbers to DB for persistent storage
-            val database = BlockedNumbersDatabase.getInstance(context);
-            val dao = database.blockedNumberDao();
-
-            // Remove previous numbers
-            dao.nukeTable();
-
-            val numbersList = numbersMap.map { it -> BlockedNumber(phone = it.key, name = it.value) }
-
-            val typedArray = numbersList.toTypedArray()
-
-            val perfStart = System.currentTimeMillis();
-
-            dao.insertAll(*typedArray);
-
-            addedNumbersCount?.value = dao.getSavedNumbersCount();
-
-            preferenceHelper.setPreference(context, "db_update_timestamp", System.currentTimeMillis().toString());
-
-            println("finished in " + (System.currentTimeMillis() - perfStart) + " " + dao.getSavedNumbersCount());
         }
     }
 }

@@ -100,6 +100,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var logContents: MutableState<String>;
 
     private var addedNumbersCount = mutableIntStateOf(0);
+    private var lastUpdateDateFormatted = mutableStateOf("");
     private var dialogOpen = mutableStateOf(false);
     private var fileUrl = mutableStateOf("")
     private var updateAutomatically = mutableStateOf(false)
@@ -161,9 +162,14 @@ class MainActivity : ComponentActivity() {
         database = BlockedNumbersDatabase.getInstance(applicationContext);
         workManager = WorkManager.getInstance(applicationContext);
         loadPersistentData();
-        workManager.getWorkInfosByTagLiveData(getString(R.string.auto_update_job_tag)).observeForever { jobs ->
+        workManager.getWorkInfosByTagLiveData(getString(R.string.auto_update_job_tag)).observeForever {
             // Update added numbers count
             addedNumbersCount.value = database.blockedNumberDao().getSavedNumbersCount();
+            lastUpdateDateFormatted.value =
+                preferenceHelper.getPreference(applicationContext, "db_update_timestamp", "0")
+                    .toLong()?.let {
+                        Date(it).toLocaleString();
+                    }.toString();
         }
     }
 
@@ -175,16 +181,7 @@ class MainActivity : ComponentActivity() {
             } else {
                 welcomeText += "Currently there are " + addedNumbersCount.value + " imported numbers.\n";
             }
-            welcomeText += "Last database update: " + preferenceHelper.getPreference(applicationContext, "db_update_timestamp", "0")
-                .toLong()?.let {
-                    Date(it).toLocaleString();
-//                    val date =
-//                        Instant.ofEpochMilli(it)
-//                            .atZone(ZoneId.systemDefault())
-//                            .toLocalDateTime();
-//                    val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy, hh:mm");
-//                    date.format(formatter);
-                };
+            welcomeText += "Last database update: " + lastUpdateDateFormatted.value;
         } else {
             welcomeText += "Start by granting permissions and importing a blocked numbers database."
         }
