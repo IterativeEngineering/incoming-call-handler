@@ -69,6 +69,8 @@ class DatabaseManager {
 
             addedNumbersCount?.value = dao.getSavedNumbersCount();
 
+            preferenceHelper.setPreference(context, "db_update_timestamp", System.currentTimeMillis().toString());
+
             println("finished in " + (System.currentTimeMillis() - perfStart) + " " + dao.getSavedNumbersCount());
         }
     }

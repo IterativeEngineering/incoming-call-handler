@@ -64,7 +64,12 @@ import merail.tools.permissions.runtime.RuntimePermissionState
 import merail.tools.permissions.special.SpecialPermissionRequester
 import merail.tools.permissions.special.SpecialPermissionState
 import java.io.IOException
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Date
 import java.util.concurrent.TimeUnit
+
 
 class MainActivity : ComponentActivity() {
 
@@ -162,6 +167,31 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun getWelcomeText(): String {
+        var welcomeText = "Welcome to the call blocker app!\n";
+        if (addedNumbersCount.value > 0) {
+            if (addedNumbersCount.value === 1) {
+                welcomeText += "Currently there is " + addedNumbersCount.value + " imported number.\n";
+            } else {
+                welcomeText += "Currently there are " + addedNumbersCount.value + " imported numbers.\n";
+            }
+            welcomeText += "Last database update: " + preferenceHelper.getPreference(applicationContext, "db_update_timestamp", "0")
+                .toLong()?.let {
+                    Date(it).toLocaleString();
+//                    val date =
+//                        Instant.ofEpochMilli(it)
+//                            .atZone(ZoneId.systemDefault())
+//                            .toLocalDateTime();
+//                    val formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy, hh:mm");
+//                    date.format(formatter);
+                };
+        } else {
+            welcomeText += "Start by granting permissions and importing a blocked numbers database."
+        }
+
+        return welcomeText;
+    }
+
     @Composable
     private fun Content() {
         IncomingCallHandlerTheme {
@@ -171,7 +201,7 @@ class MainActivity : ComponentActivity() {
                     .fillMaxSize(),
             ) {
                 Text(
-                    "Welcome to the call blocker app.\nCurrently there are " + addedNumbersCount.value + " imported numbers.",
+                    text = getWelcomeText(),
                     Modifier
                         .fillMaxWidth()
                         .defaultMinSize(
@@ -272,13 +302,15 @@ class MainActivity : ComponentActivity() {
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 0.dp, start = 4.dp).clickable(role = Role.Checkbox, onClick = {
-                        saveCallHandlingPreference(
-                            blockTheCall,
-                            !blockTheCall.value,
-                            "call_blocking_block"
-                        )
-                    })
+                    modifier = Modifier
+                        .padding(bottom = 0.dp, start = 4.dp)
+                        .clickable(role = Role.Checkbox, onClick = {
+                            saveCallHandlingPreference(
+                                blockTheCall,
+                                !blockTheCall.value,
+                                "call_blocking_block"
+                            )
+                        })
                 ) {
                     Checkbox(
                         checked = blockTheCall.value,
@@ -291,13 +323,15 @@ class MainActivity : ComponentActivity() {
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 0.dp, start = 4.dp, top = 4.dp).clickable(role = Role.Checkbox, onClick = {
-                        saveCallHandlingPreference(
-                            silenceTheCall,
-                            !silenceTheCall.value,
-                            "call_blocking_silence"
-                        )
-                    })
+                    modifier = Modifier
+                        .padding(bottom = 0.dp, start = 4.dp, top = 4.dp)
+                        .clickable(role = Role.Checkbox, onClick = {
+                            saveCallHandlingPreference(
+                                silenceTheCall,
+                                !silenceTheCall.value,
+                                "call_blocking_silence"
+                            )
+                        })
                 ) {
                     Checkbox(
                         checked = silenceTheCall.value,
@@ -310,13 +344,15 @@ class MainActivity : ComponentActivity() {
                 }
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(bottom = 0.dp, start = 4.dp, top = 4.dp).clickable(role = Role.Checkbox, onClick = {
-                        saveCallHandlingPreference(
-                            showInfoWindow,
-                            !showInfoWindow.value,
-                            "call_blocking_show_window"
-                        )
-                    })
+                    modifier = Modifier
+                        .padding(bottom = 0.dp, start = 4.dp, top = 4.dp)
+                        .clickable(role = Role.Checkbox, onClick = {
+                            saveCallHandlingPreference(
+                                showInfoWindow,
+                                !showInfoWindow.value,
+                                "call_blocking_show_window"
+                            )
+                        })
                 ) {
                     Checkbox(
                         checked = showInfoWindow.value,
@@ -581,9 +617,11 @@ class MainActivity : ComponentActivity() {
     fun AutoUpdateCheckbox() {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(bottom = 0.dp).clickable(role = Role.Checkbox, onClick = {
-                updateAutomatically.value = !updateAutomatically.value
-            })
+            modifier = Modifier
+                .padding(bottom = 0.dp)
+                .clickable(role = Role.Checkbox, onClick = {
+                    updateAutomatically.value = !updateAutomatically.value
+                })
         ) {
             Checkbox(
                 checked = updateAutomatically.value,
