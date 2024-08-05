@@ -87,7 +87,7 @@ class DatabaseManager {
                     updateTimestamp.toString()
                 );
 
-                println("finished in " + (System.currentTimeMillis() - perfStart) + " " + dao.getSavedNumbersCount());
+//                println("finished in " + (System.currentTimeMillis() - perfStart) + " " + dao.getSavedNumbersCount());
 
                 return ListenableWorker.Result.success();
             } catch (exception: Exception) {
