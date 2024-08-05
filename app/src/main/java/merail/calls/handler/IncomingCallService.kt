@@ -72,7 +72,7 @@ class IncomingCallService : CallScreeningService() {
                 phoneNumber?.let {
                     var infoWindowText = "Warning: $it";
                     if (blockedNumberName?.name?.isNotEmpty() == true) {
-                        infoWindowText += "(" + blockedNumberName.name + ") "
+                        infoWindowText += " (" + blockedNumberName.name + ") "
                     }
                     infoWindowText += " is in the blocked numbers database.";
                     incomingCallAlert.showWindow(this, infoWindowText)

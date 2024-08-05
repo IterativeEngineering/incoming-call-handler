@@ -29,8 +29,6 @@ class UpdateDatabaseWorker(
 
         logger.saveToLog(applicationContext, "Running automatic db update from $fileUrl")
 
-        databaseUpdater.updateDatabaseFromUrl(applicationContext, fileUrl!!, null);
-
-        Result.success(); // todo - handle failure
+        return@withContext databaseUpdater.updateDatabaseFromUrl(applicationContext, fileUrl!!, null);
     }
 }

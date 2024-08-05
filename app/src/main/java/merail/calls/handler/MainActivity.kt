@@ -162,7 +162,7 @@ class MainActivity : ComponentActivity() {
         database = BlockedNumbersDatabase.getInstance(applicationContext);
         workManager = WorkManager.getInstance(applicationContext);
         loadPersistentData();
-        workManager.getWorkInfosByTagLiveData(getString(R.string.auto_update_job_tag)).observeForever {
+        workManager.getWorkInfosByTagLiveData(getString(R.string.auto_update_job_tag)).observeForever { jobs ->
             // Update added numbers count
             addedNumbersCount.value = database.blockedNumberDao().getSavedNumbersCount();
             lastUpdateDateFormatted.value =
@@ -254,7 +254,7 @@ class MainActivity : ComponentActivity() {
                     isSpecialPermissionButtonVisible.value && showInfoWindow.value -> {
                         Text(
 
-                            text = "Special permission is required to show the info window",
+                            text = "Special permission is required to show the info window.",
                             modifier = Modifier.padding(start = 4.dp)
                         )
                     }
@@ -473,7 +473,7 @@ class MainActivity : ComponentActivity() {
             try {
                 Thread {
                     contentResolver.openInputStream(uri)?.use { inputStream ->
-                        databaseManager.parseStream(inputStream, applicationContext, addedNumbersCount)
+                        databaseManager.parseStream(inputStream, applicationContext, addedNumbersCount, lastUpdateDateFormatted)
                     }
                 }.start()
 
@@ -574,7 +574,8 @@ class MainActivity : ComponentActivity() {
                                                             databaseUpdater.updateDatabaseFromUrl(
                                                                 applicationContext,
                                                                 fileUrl.value,
-                                                                addedNumbersCount
+                                                                addedNumbersCount,
+                                                                lastUpdateDateFormatted
                                                             );
                                                         } catch (e: IOException) {
                                                             Looper.prepare()

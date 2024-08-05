@@ -3,9 +3,11 @@ package merail.calls.handler
 import android.content.Context
 import android.util.JsonReader
 import androidx.compose.runtime.MutableState
+import androidx.work.ListenableWorker
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
+import java.util.Date
 
 
 class DatabaseManager {
@@ -14,7 +16,12 @@ class DatabaseManager {
         private val preferenceHelper = PreferenceHelper();
     }
 
-    fun parseStream(inputStream: InputStream, context: Context, addedNumbersCount: MutableState<Int>?) {
+    fun parseStream(
+        inputStream: InputStream,
+        context: Context,
+        addedNumbersCount: MutableState<Int>?,
+        lastUpdateDateFormatted: MutableState<String>? = null
+    ): ListenableWorker.Result {
         // Parses a JSON stream and saves into a file.
         // The structure remains the same, e.g.: [ { "phone": "123", "name": "xyz" }, { "phone": "456", "name": "abc" }, ... ]
         // but the name is joined for multiple numbers in case there are duplicates.
@@ -60,7 +67,8 @@ class DatabaseManager {
                 // Remove previous numbers
                 dao.nukeTable();
 
-                val numbersList = numbersMap.map { it -> BlockedNumber(phone = it.key, name = it.value) }
+                val numbersList =
+                    numbersMap.map { it -> BlockedNumber(phone = it.key, name = it.value) }
 
                 val typedArray = numbersList.toTypedArray()
 
@@ -68,13 +76,23 @@ class DatabaseManager {
 
                 dao.insertAll(*typedArray);
 
-                addedNumbersCount?.value = dao.getSavedNumbersCount();
+                val updateTimestamp = System.currentTimeMillis();
 
-                preferenceHelper.setPreference(context, "db_update_timestamp", System.currentTimeMillis().toString());
+                addedNumbersCount?.value = dao.getSavedNumbersCount();
+                lastUpdateDateFormatted?.value = Date(updateTimestamp).toLocaleString();
+
+                preferenceHelper.setPreference(
+                    context,
+                    "db_update_timestamp",
+                    updateTimestamp.toString()
+                );
 
                 println("finished in " + (System.currentTimeMillis() - perfStart) + " " + dao.getSavedNumbersCount());
+
+                return ListenableWorker.Result.success();
             } catch (exception: Exception) {
                 // Exception may be thrown when JSON is invalid
+                return ListenableWorker.Result.failure();
             }
         }
     }
