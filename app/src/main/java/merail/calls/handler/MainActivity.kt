@@ -392,7 +392,8 @@ class MainActivity : ComponentActivity() {
                 Text(
                     text = text,
                     style = Typography.titleLarge,
-                    fontSize = 20.sp
+                    fontSize = 20.sp,
+                    color = Color.White
                 )
             }
         }
