@@ -28,10 +28,10 @@ class DatabaseManager {
         BufferedReader(InputStreamReader(inputStream)).use { reader ->
             val numbersMap = HashMap<String, String>(150000);
 
-            val jsonReader = JsonReader(reader);
-            jsonReader.beginArray();
+            val jsonReader = JsonReader(reader)
 
             try {
+            jsonReader.beginArray();
                 while (jsonReader.hasNext()) {
                     jsonReader.beginObject();
 
