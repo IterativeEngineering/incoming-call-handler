@@ -561,7 +561,7 @@ class MainActivity : ComponentActivity() {
                                                     val saveRequest =
                                                         PeriodicWorkRequestBuilder<UpdateDatabaseWorker>(
                                                             updateFrequency.value.toLong(),
-                                                            TimeUnit.MINUTES
+                                                            TimeUnit.DAYS
                                                         )
                                                             .addTag(getString(R.string.auto_update_job_tag))
                                                             .setConstraints(jobConstraints)
@@ -651,11 +651,8 @@ class MainActivity : ComponentActivity() {
                             .align(alignment = Alignment.Top)
                             .height(50.dp)
                     )
-//                    Text(
-//                        "day(s)"
-//                    )
                     Text(
-                        "minutes (min. value: 15)"
+                        "days"
                     )
                 }
             }
