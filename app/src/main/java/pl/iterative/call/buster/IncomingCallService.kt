@@ -67,6 +67,12 @@ class IncomingCallService : CallScreeningService() {
                     "call_blocking_show_window"
                 )
                     .toBoolean()
+            val logBlockedCalls =
+                preferenceHelper.getPreference(
+                    applicationContext,
+                    "call_blocking_log_blocked"
+                )
+                    .toBoolean()
 
             if (showInfoWindow) {
                 phoneNumber?.let {
@@ -94,13 +100,14 @@ class IncomingCallService : CallScreeningService() {
                     .setRejectCall(blockTheCall)
                     // Sets whether ringing should be silenced for the incoming call.
                     .setSilenceCall(silenceTheCall)
-                    // Sets whether the incoming call should not be displayed in the call log.
-                    .setSkipCallLog(false)
                     // Sets whether a missed call notification should not be shown for the incoming call.
-                    .setSkipNotification(false)
-                    .build()
+                    .setSkipNotification(true);
+                if (blockTheCall) {
+                    // Sets whether the incoming call should not be displayed in the call log.
+                    response.setSkipCallLog(!logBlockedCalls)
+                }
 
-                respondToCall(callDetails, response)
+                respondToCall(callDetails, response.build())
             } else {
                 // Handle in default dialer
                 logger.saveToLog(applicationContext,
