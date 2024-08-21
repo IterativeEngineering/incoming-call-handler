@@ -1,4 +1,4 @@
-package merail.calls.handler
+package pl.iterative.call.buster
 
 import androidx.room.ColumnInfo
 import androidx.room.Dao

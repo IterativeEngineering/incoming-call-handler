@@ -1,14 +1,14 @@
-package merail.calls.handler.workers
+package pl.iterative.call.buster.workers
 
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import merail.calls.handler.OperationLogger
-import merail.calls.handler.PreferenceHelper
-import merail.calls.handler.R
-import merail.calls.handler.UpdateDatabaseFromUrl
+import pl.iterative.call.buster.OperationLogger
+import pl.iterative.call.buster.PreferenceHelper
+import pl.iterative.call.buster.R
+import pl.iterative.call.buster.UpdateDatabaseFromUrl
 
 class UpdateDatabaseWorker(
     context: Context,

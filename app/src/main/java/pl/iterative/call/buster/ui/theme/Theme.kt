@@ -1,4 +1,4 @@
-package merail.calls.handler.ui.theme
+package pl.iterative.call.buster.ui.theme
 
 import android.app.Activity
 import android.os.Build

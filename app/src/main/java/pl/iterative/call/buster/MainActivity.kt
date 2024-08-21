@@ -1,4 +1,4 @@
-package merail.calls.handler
+package pl.iterative.call.buster
 
 import android.Manifest
 import android.app.role.RoleManager
@@ -53,9 +53,9 @@ import androidx.work.Constraints
 import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import merail.calls.handler.ui.theme.IncomingCallHandlerTheme
-import merail.calls.handler.ui.theme.Typography
-import merail.calls.handler.workers.UpdateDatabaseWorker
+import pl.iterative.call.buster.ui.theme.IncomingCallHandlerTheme
+import pl.iterative.call.buster.ui.theme.Typography
+import pl.iterative.call.buster.workers.UpdateDatabaseWorker
 import merail.tools.permissions.SettingsSnackbar
 import merail.tools.permissions.role.RoleRequester
 import merail.tools.permissions.role.RoleState

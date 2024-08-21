@@ -1,4 +1,4 @@
-package merail.calls.handler.ui.theme
+package pl.iterative.call.buster.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

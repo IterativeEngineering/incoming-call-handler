@@ -13,5 +13,5 @@ dependencyResolutionManagement {
         maven("https://jitpack.io")
     }
 }
-rootProject.name = "incoming-call-handler"
+rootProject.name = "Call Buster - Free Spam Call Blocker"
 include(":app")

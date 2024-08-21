@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "merail.calls.handler"
+    namespace = "pl.iterative.call.buster"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "merail.calls.handler"
+        applicationId = "pl.iterative.call.buster"
         minSdk = 29
         targetSdk = 34
     }
