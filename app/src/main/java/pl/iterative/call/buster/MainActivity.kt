@@ -109,7 +109,6 @@ class MainActivity : ComponentActivity() {
     private var blockTheCall = mutableStateOf(false)
     private var silenceTheCall = mutableStateOf(false)
     private var showInfoWindow = mutableStateOf(false)
-    private var logBlockedCalls = mutableStateOf(true)
 
     //    Call handling
 
@@ -359,27 +358,6 @@ class MainActivity : ComponentActivity() {
                     )
                     Text(
                         "Show info window"
-                    )
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .padding(bottom = 0.dp, start = 4.dp, top = 4.dp)
-                        .clickable(role = Role.Checkbox, onClick = {
-                            saveCallHandlingPreference(
-                                logBlockedCalls,
-                                !logBlockedCalls.value,
-                                "call_blocking_log_blocked"
-                            )
-                        })
-                ) {
-                    Checkbox(
-                        checked = logBlockedCalls.value,
-                        onCheckedChange = null,
-                        modifier = Modifier.padding(end = 5.dp)
-                    )
-                    Text(
-                        "Save in the call log"
                     )
                 }
             }
@@ -714,9 +692,6 @@ class MainActivity : ComponentActivity() {
             preferenceHelper.getPreference(applicationContext, "call_blocking_silence").toBoolean()
         showInfoWindow.value =
             preferenceHelper.getPreference(applicationContext, "call_blocking_show_window")
-                .toBoolean()
-        logBlockedCalls.value =
-            preferenceHelper.getPreference(applicationContext, "call_blocking_log_blocked", "true")
                 .toBoolean()
     }
 
