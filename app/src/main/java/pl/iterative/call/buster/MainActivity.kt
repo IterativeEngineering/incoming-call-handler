@@ -637,7 +637,7 @@ class MainActivity : ComponentActivity() {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .padding(bottom = 0.dp)
+                .padding(bottom = 0.dp, start = 16.dp)
                 .clickable(role = Role.Checkbox, onClick = {
                     updateAutomatically.value = !updateAutomatically.value
                 })
