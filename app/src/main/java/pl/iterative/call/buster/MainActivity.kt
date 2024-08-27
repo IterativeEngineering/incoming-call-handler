@@ -64,9 +64,6 @@ import merail.tools.permissions.runtime.RuntimePermissionState
 import merail.tools.permissions.special.SpecialPermissionRequester
 import merail.tools.permissions.special.SpecialPermissionState
 import java.io.IOException
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
@@ -102,6 +99,7 @@ class MainActivity : ComponentActivity() {
     private var addedNumbersCount = mutableIntStateOf(0);
     private var lastUpdateDateFormatted = mutableStateOf("");
     private var dialogOpen = mutableStateOf(false);
+    private var fileFormatDescOpen = mutableStateOf(false);
     private var fileUrl = mutableStateOf("")
     private var updateAutomatically = mutableStateOf(false)
     private var updateFrequency = mutableStateOf("1")
@@ -164,7 +162,7 @@ class MainActivity : ComponentActivity() {
         loadPersistentData();
         workManager.getWorkInfosByTagLiveData(getString(R.string.auto_update_job_tag)).observeForever { jobs ->
             // Update added numbers count
-            addedNumbersCount.value = database.blockedNumberDao().getSavedNumbersCount();
+            addedNumbersCount.intValue = database.blockedNumberDao().getSavedNumbersCount();
             lastUpdateDateFormatted.value =
                 preferenceHelper.getPreference(applicationContext, "db_update_timestamp", "0")
                     .toLong()?.let {
@@ -175,7 +173,7 @@ class MainActivity : ComponentActivity() {
 
     private fun getWelcomeText(): String {
         var welcomeText = "Welcome to the Call Buster app!\n";
-        if (addedNumbersCount.value > 0) {
+        if (addedNumbersCount.intValue > 0) {
             if (addedNumbersCount.value === 1) {
                 welcomeText += "Currently there is " + addedNumbersCount.value + " imported number.\n";
             } else {
@@ -197,15 +195,20 @@ class MainActivity : ComponentActivity() {
                 modifier = Modifier
                     .fillMaxSize(),
             ) {
-                Text(
-                    text = getWelcomeText(),
-                    Modifier
-                        .fillMaxWidth()
-                        .defaultMinSize(
-                            minWidth = 72.dp,
-                        )
-                        .padding(8.dp)
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = getWelcomeText(),
+                        Modifier
+                            .fillMaxWidth(0.85f)
+                            .defaultMinSize(
+                                minWidth = 72.dp,
+                            )
+                            .padding(8.dp)
+                    )
+                    Button(onClick = { showFileFormatDescription() }) {
+                        Text("?")
+                    }
+                }
                 logContents = remember {
                     mutableStateOf("")
                 }
@@ -293,6 +296,7 @@ class MainActivity : ComponentActivity() {
                         )
                 )
                 FileUrlDialog()
+                FileFormatDescription()
                 Text(
                     text = "How to handle a call from a blocked number?",
                     modifier = Modifier.padding(start = 5.dp, bottom = 4.dp)
@@ -437,6 +441,20 @@ class MainActivity : ComponentActivity() {
                 style = Typography.titleSmall,
                 modifier = Modifier.padding(top = 2.dp, start = 4.dp)
             )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = getWelcomeText(),
+                    Modifier
+                        .defaultMinSize(
+                            minWidth = 72.dp,
+                        )
+                        .fillMaxWidth(0.85f)
+                        .padding(8.dp)
+                )
+                Button(onClick = {  }) {
+                    Text("?")
+                }
+            }
             FileUrlDialog()
         }
     }
@@ -451,6 +469,10 @@ class MainActivity : ComponentActivity() {
         } catch (exception: Exception) {
             Toast.makeText(this, "please install a file manager", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun showFileFormatDescription() {
+        fileFormatDescOpen.value = true;
     }
 
     private fun importFromUrl() {
@@ -608,8 +630,6 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-
-
     }
 
     @Composable
@@ -669,6 +689,61 @@ class MainActivity : ComponentActivity() {
         )
     }
 
+    @Composable
+    fun FileFormatDescription() {
+        when {
+            fileFormatDescOpen.value -> {
+                Dialog(onDismissRequest = { fileFormatDescOpen.value = false }) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .fillMaxHeight(0.6f)
+                            .padding(0.dp),
+                        shape = RoundedCornerShape(4.dp),
+                    ) {
+                        Column(
+                            Modifier.fillMaxHeight().verticalScroll(
+                                rememberScrollState()
+                            ),
+                            verticalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "The input files needs to be UTF-8 encoded JSON file, with an array of objects. Each object should have a 'phone' property and optionally, a 'name' property.\nFor example:\n[\n" +
+                                        "    {\n" +
+                                        "        \"phone\": \"+48123456789\",\n" +
+                                        "        \"name\": \"abcde\"\n" +
+                                        "    },\n" +
+                                        "    {\n" +
+                                        "        \"phone\": \"+23480312345678\",\n" +
+                                        "        \"name\": \"spam number\"\n" +
+                                        "    }\n" +
+                                        "]",
+                                modifier = Modifier
+                                    .wrapContentSize(Alignment.TopCenter)
+                                    .padding(8.dp),
+                                fontSize = 16.sp,
+                                textAlign = TextAlign.Left,
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                            ) {
+
+                                TextButton(
+                                    onClick = { fileFormatDescOpen.value = false },
+                                    modifier = Modifier.padding(8.dp),
+                                ) {
+                                    Text("Dismiss")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private fun saveCallHandlingPreference(
         variable: MutableState<Boolean>,
         newVal: Boolean,
@@ -684,7 +759,7 @@ class MainActivity : ComponentActivity() {
 
     private fun loadPersistentData() {
         // Load added numbers count
-        addedNumbersCount.value = database.blockedNumberDao().getSavedNumbersCount();
+        addedNumbersCount.intValue = database.blockedNumberDao().getSavedNumbersCount();
 
         blockTheCall.value =
             preferenceHelper.getPreference(applicationContext, "call_blocking_block").toBoolean()

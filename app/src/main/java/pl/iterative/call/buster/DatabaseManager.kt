@@ -51,7 +51,7 @@ class DatabaseManager {
                     jsonReader.endObject();
 
                     val existingBlockedEntityName = numbersMap[phone]
-                    if (existingBlockedEntityName !== null) {
+                    if (existingBlockedEntityName !== null && existingBlockedEntityName.isNotEmpty()) {
                         numbersMap[phone] = "$existingBlockedEntityName | $name";
                     } else {
                         numbersMap[phone] = name;

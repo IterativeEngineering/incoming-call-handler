@@ -12,6 +12,7 @@ android {
         applicationId = "pl.iterative.call.buster"
         minSdk = 29
         targetSdk = 34
+        versionCode = 1
     }
 
     compileOptions {
