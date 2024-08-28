@@ -21,14 +21,14 @@ class OperationLogger {
     }
 
     fun saveToLog(context: Context, content: String) {
-        context.openFileOutput(logFileName, Context.MODE_APPEND).use {
-            it.write(('[' + Calendar.getInstance().time.toString() + "] " + content + "\n").toByteArray());
-        }
+        // context.openFileOutput(logFileName, Context.MODE_APPEND).use {
+        //     it.write(('[' + Calendar.getInstance().time.toString() + "] " + content + "\n").toByteArray());
+        // }
     }
 
     fun clearLog(context: Context) {
-        context.openFileOutput(logFileName, Context.MODE_PRIVATE).use {
-            it.write(("").toByteArray());
-        }
+        // context.openFileOutput(logFileName, Context.MODE_PRIVATE).use {
+        //     it.write(("").toByteArray());
+        // }
     }
 }

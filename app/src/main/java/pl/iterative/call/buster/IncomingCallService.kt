@@ -95,7 +95,7 @@ class IncomingCallService : CallScreeningService() {
                     // Sets whether ringing should be silenced for the incoming call.
                     .setSilenceCall(silenceTheCall)
                     // Sets whether a missed call notification should not be shown for the incoming call.
-                    .setSkipNotification(true);
+                    .setSkipNotification(blockTheCall);
 
                 respondToCall(callDetails, response.build())
             } else {
